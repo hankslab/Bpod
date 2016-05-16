@@ -1,5 +1,7 @@
 classdef (Abstract) ProtocolObj < handle
-
+% This class defines a Protocol Object. 
+% The methods of this class match the 'actions' that were implemented in BControl style classes.
+% Instantiations of this class should not directly access the global BpodSystem but rather get passed relevant elements of that global through methods.
 	properties (SetAccess=private,GetAccess=public)
 		settings % a struct with the protocol level settings
 		n_done_trials = 0;
@@ -17,19 +19,18 @@ classdef (Abstract) ProtocolObj < handle
 		end
 		function init(obj)
 		end
+		function loadSettings(obj, by, value)
+		end
 		function prepareNextTrial(obj)
 		end
-		function generateSM(obj)
+		function SMA = generateSM(obj)
 		end
-		function sendSM(obj)
+		function trialCompleted(obj, RawEvents)
 		end
-		function run(obj)
+		function saveTrial(obj, where)
 		end
-		function trialCompleted(obj)
+		function endSession(obj)
 		end
-		function saveTrial(obj)
-		end
-
 		
 	end
 

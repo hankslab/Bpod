@@ -6,8 +6,11 @@ classdef (Abstract) ProtocolObj < handle
 		settings % a struct with the protocol level settings
 		n_done_trials = 0;
 		n_started_trials = 0;
+		hit_history = [];
+		reward_history = [];
+		choice_history = [];
 
-	end
+	end % properties
 
 	methods
 		function ProtocolObj(by, value)
@@ -17,22 +20,20 @@ classdef (Abstract) ProtocolObj < handle
 			% if by == 'settings' value should be a struct
 
 		end
-		function init(obj)
-		end
-		function loadSettings(obj, by, value)
-		end
-		function prepareNextTrial(obj)
-		end
-		function SMA = generateSM(obj)
-		end
-		function trialCompleted(obj, RawEvents)
-		end
-		function saveTrial(obj, where)
-		end
-		function endSession(obj)
-		end
+
+		init(obj)
 		
-	end
-
-
-end
+		loadSettings(obj, by, value)
+		
+		prepareNextTrial(obj)
+		
+		SMA = generateSM(obj)
+		
+		trialCompleted(obj, RawEvents)
+		
+		saveTrial(obj, where)
+		
+		endSession(obj)		
+		
+	end % methods
+end % methods

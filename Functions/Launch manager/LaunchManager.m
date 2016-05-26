@@ -293,11 +293,18 @@ if ~isempty(NameList)
         FieldName = F{1};
         BpodSystem.ProtocolSettings = eval(['SettingStruct.' FieldName]);
         BpodSystem.Data = struct;
-        addpath(ProtocolPath);
+        
         set(BpodSystem.GUIHandles.RunButton, 'cdata', BpodSystem.Graphics.PauseButton, 'TooltipString', 'Press to pause session');
         BpodSystem.BeingUsed = 1;
         BpodSystem.ProtocolStartTime = BpodTime;
-        run(ProtocolPath);
+        
+        if ProtocolName(1) == '@'    
+            dispatch(ProtocolName)
+        else
+            addpath(ProtocolPath);            
+            run(ProtocolPath);
+        end
+        
     else
         BpodErrorSound;
         msgbox('Error: You must choose a valid settings file to proceed.', 'Modal')

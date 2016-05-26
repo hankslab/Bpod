@@ -21,9 +21,11 @@ function Bpod(varargin)
 
 BpodPath = fileparts(which('Bpod'));
 addpath(genpath(fullfile(BpodPath, 'Functions')));
+% JCE : I think it is a mistake to add the Example matrices to the path.
+
 addpath(genpath(fullfile(BpodPath, 'Media')));
 try
-    evalin('base', 'BpodSystem;');
+    evalin('base', 'BpodSystem;');   
     BpodErrorSound;
     disp('Bpod is already open.');
 catch

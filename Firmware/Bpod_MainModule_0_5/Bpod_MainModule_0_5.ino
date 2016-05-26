@@ -89,6 +89,7 @@ int nWaves = 0; // number of scheduled waves registered
 byte CurrentWave = 0; // Scheduled wave currently in use
 byte LowByte = 0; // LowByte through FourthByte are used for reading bytes that will be combined to 16 and 32 bit integers
 byte SecondByte = 0; byte ThirdByte = 0; byte FourthByte = 0;
+byte Byte1 = 0; byte Byte2 = 0; byte Byte3 = 0; byte Byte4 = 0; // Temporary storage of command and param values read from serial port
 unsigned long LongInt = 0;
 int nStates = 0;
 int nEvents = 0;
@@ -185,22 +186,20 @@ void handler() {
       manualOverrideOutputs();
       break;
     case 'I': // Read and return digital input line states
-        while (SerialUSB.available() == 0) {}
-        LowByte = SerialUSB.read();
-        while (SerialUSB.available() == 0) {}
-        SecondByte = SerialUSB.read();
-        switch (LowByte) {
+        Byte1 = SerialReadByte();
+        Byte2 = SerialReadByte();
+        switch (Byte1) {
           case 'B': // Read BNC input line
-            ThirdByte = digitalReadDirect(BncInputLines[SecondByte]);
+            Byte3 = digitalReadDirect(BncInputLines[Byte2]);
           break;
           case 'P': // Read port digital input line
-            ThirdByte = digitalReadDirect(PortDigitalInputLines[SecondByte]);
+            Byte3 = digitalReadDirect(PortDigitalInputLines[Byte2]);
           break;
           case 'W': // Read wire digital input line
-            ThirdByte = digitalReadDirect(WireDigitalInputLines[SecondByte]);
+            Byte3 = digitalReadDirect(WireDigitalInputLines[Byte2]);
           break;
         }
-        SerialUSB.write(ThirdByte);
+        SerialUSB.write(Byte3);
         break;
     case 'Z':  // Bpod governing machine has closed the client program
       ConnectedToClient = 0;
@@ -208,31 +207,22 @@ void handler() {
       SerialUSB.write('1');
       updateStatusLED(0);
       break;
-    case 'S': // Soft code. Since not in a state matrix, read bytes and ignore data.
-        while (SerialUSB.available() == 0) {}
-        VirtualEventTarget = SerialUSB.read();
-        while (SerialUSB.available() == 0) {}
-        VirtualEventData = SerialUSB.read();
+    case 'S': // Soft code. 
+        VirtualEventTarget = SerialReadByte();
+        VirtualEventData = SerialReadByte();
       break;
     case 'H': // Recieve byte from USB and send to serial module 1 or 2
-        while (SerialUSB.available() == 0) {}
-        LowByte = SerialUSB.read();
-        while (SerialUSB.available() == 0) {}
-        SecondByte = SerialUSB.read();
-        switch (LowByte) {
-          case 1: // Send to serial port 1
-            Serial1.write(SecondByte);
-          break;
-          case 2: // Send to serial port 2
-            Serial2.write(SecondByte);
-          break;
+        Byte1 = SerialReadByte();
+        Byte2 = SerialReadByte();
+        if (Byte1 == 1) {
+            Serial1.write(Byte2);
+        } else if (Byte1 == 2) {
+            Serial2.write(Byte2);
         }
      break;
     case 'V': // Manual override: execute virtual event
-    while (SerialUSB.available() == 0) {}
-    VirtualEventTarget = SerialUSB.read();
-    while (SerialUSB.available() == 0) {}
-    VirtualEventData = SerialUSB.read();
+    VirtualEventTarget = SerialReadByte();
+    VirtualEventData = SerialReadByte();
     if (RunningStateMatrix) { 
         switch (VirtualEventTarget) {
           case 'P': // Virtual poke PortInputLineLastKnownStatus
@@ -268,62 +258,54 @@ void handler() {
           }
     } break;
     case 'P':  // Get new state matrix from client
-      while (SerialUSB.available() == 0) {} 
-      nStates = SerialUSB.read();
+      nStates = SerialReadByte();
       // Get Input state matrix
       for (int x = 0; x < nStates; x++) {
         for (int y = 0; y < 40; y++) {
-          while (SerialUSB.available() == 0) {}
-          InputStateMatrix[x][y] = SerialUSB.read();
+          InputStateMatrix[x][y] = SerialReadByte();
         }
       }
       // Get Output state matrix
       for (int x = 0; x < nStates; x++) {
         for (int y = 0; y < 17; y++) {
-          while (SerialUSB.available() == 0) {}
-          OutputStateMatrix[x][y] = SerialUSB.read();
+          OutputStateMatrix[x][y] = SerialReadByte();
         }
       }
       // Get global timer matrix
       for (int x = 0; x < nStates; x++) {
         for (int y = 0; y < 5; y++) {
-          while (SerialUSB.available() == 0) {}
-          GlobalTimerMatrix[x][y] = SerialUSB.read();
+          GlobalTimerMatrix[x][y] = SerialReadByte();
         }
       }
       // Get global counter matrix
       for (int x = 0; x < nStates; x++) {
         for (int y = 0; y < 5; y++) {
-          while (SerialUSB.available() == 0) {}
-          GlobalCounterMatrix[x][y] = SerialUSB.read();
+          GlobalCounterMatrix[x][y] = SerialReadByte();
         }
       }
       // Get global counter attached events
       for (int x = 0; x < 5; x++) {
-          while (SerialUSB.available() == 0) {}
-          GlobalCounterAttachedEvents[x] = SerialUSB.read();
+          GlobalCounterAttachedEvents[x] = SerialReadByte();
       }
       // Get input channel configurtaion
       for (int x = 0; x < 8; x++) {
-          while (SerialUSB.available() == 0) {}
-          PortInputsEnabled[x] = SerialUSB.read();
+          PortInputsEnabled[x] = SerialReadByte();
       }
       for (int x = 0; x < 4; x++) {
-          while (SerialUSB.available() == 0) {}
-          WireInputsEnabled[x] = SerialUSB.read();
+          WireInputsEnabled[x] = SerialReadByte();
       }
       
       // Get state timers
       for (int x = 0; x < nStates; x++) {
-              StateTimers[x] = ReadLong();
+              StateTimers[x] = SerialReadLong();
       }
       // Get global timers
       for (int x = 0; x < 5; x++) {
-              GlobalTimers[x] = ReadLong();
+              GlobalTimers[x] = SerialReadLong();
       }
       // Get global counter event count thresholds
       for (int x = 0; x < 5; x++) {
-          GlobalCounterThresholds[x] = ReadLong();
+          GlobalCounterThresholds[x] = SerialReadLong();
       }
       SerialUSB.write(1);
       break;
@@ -551,19 +533,6 @@ void handler() {
   } // End Matrix finished
 } // End timer handler
 
-unsigned long ReadLong() {
-  while (SerialUSB.available() == 0) {}
-  LowByte = SerialUSB.read();
-  while (SerialUSB.available() == 0) {}
-  SecondByte = SerialUSB.read();
-  while (SerialUSB.available() == 0) {}
-  ThirdByte = SerialUSB.read();
-  while (SerialUSB.available() == 0) {}
-  FourthByte = SerialUSB.read();
-  LongInt =  (unsigned long)(((unsigned long)FourthByte << 24) | ((unsigned long)ThirdByte << 16) | ((unsigned long)SecondByte << 8) | ((unsigned long)LowByte));
-  return LongInt;
-}
-
 void SetBNCOutputLines(int BNCState) {
   switch(BNCState) {
         case 0: {digitalWriteDirect(BncOutputLines[0], LOW); digitalWriteDirect(BncOutputLines[1], LOW);} break;
@@ -683,47 +652,44 @@ void setStateOutputs(byte State) {
 
 void manualOverrideOutputs() {
   byte OutputType = 0;
-  while (SerialUSB.available() == 0) {} 
-  OutputType = SerialUSB.read();
+  OutputType = SerialReadByte();
   switch(OutputType) {
     case 'P':  // Override PWM lines
       for (int x = 0; x < 8; x++) {
-        while (SerialUSB.available() == 0) {} 
-        PortPWMOutputState[x] = SerialUSB.read();
+        PortPWMOutputState[x] = SerialReadByte();
       }
       UpdatePWMOutputStates(); 
       break;
     case 'V':  // Override valves
-      while (SerialUSB.available() == 0) {} 
-      LowByte = SerialUSB.read();
-      ValveRegWrite(LowByte);
+      Byte1 = SerialReadByte();
+      ValveRegWrite(Byte1);
       break;
     case 'B': // Override BNC lines
-      while (SerialUSB.available() == 0) {} 
-      LowByte = SerialUSB.read();
-      SetBNCOutputLines(LowByte);
+      Byte1 = SerialReadByte();
+      SetBNCOutputLines(Byte1);
       break;
     case 'W':  // Override wire terminal output lines
-      while (SerialUSB.available() == 0) {} 
-      LowByte = SerialUSB.read();
-      SetWireOutputLines(LowByte);
+      Byte1 = SerialReadByte();
+      SetWireOutputLines(Byte1);
       break;
     case 'S': // Override serial module port 1
-      while (SerialUSB.available() == 0) {} 
-      LowByte = SerialUSB.read();  // Read data to send
-      Serial1.write(LowByte);
+      Byte1 = SerialReadByte();  // Read data to send
+      Serial1.write(Byte1);
       break;
     case 'T': // Override serial module port 2
-      while (SerialUSB.available() == 0) {} 
-      LowByte = SerialUSB.read();  // Read data to send
-      Serial2.write(LowByte);
+      Byte1 = SerialReadByte();  // Read data to send
+      Serial2.write(Byte1);
       break;
     }
  }
  
- void digitalWriteDirect(int pin, boolean val){
+void digitalWriteDirect(int pin, boolean val){
   if(val) g_APinDescription[pin].pPort -> PIO_SODR = g_APinDescription[pin].ulPin;
   else    g_APinDescription[pin].pPort -> PIO_CODR = g_APinDescription[pin].ulPin;
+}
+
+byte digitalReadDirect(int pin){
+  return !!(g_APinDescription[pin].pPort -> PIO_PDSR & g_APinDescription[pin].ulPin);
 }
 
 void SerialWriteLong(unsigned long num) {
@@ -738,6 +704,21 @@ void SerialWriteShort(word num) {
   SerialUSB.write((byte)(num >> 8)); 
 }
 
-byte digitalReadDirect(int pin){
-  return !!(g_APinDescription[pin].pPort -> PIO_PDSR & g_APinDescription[pin].ulPin);
+unsigned long SerialReadLong() {
+  while (SerialUSB.available() == 0) {}
+  LowByte = SerialUSB.read();
+  while (SerialUSB.available() == 0) {}
+  SecondByte = SerialUSB.read();
+  while (SerialUSB.available() == 0) {}
+  ThirdByte = SerialUSB.read();
+  while (SerialUSB.available() == 0) {}
+  FourthByte = SerialUSB.read();
+  LongInt =  (unsigned long)(((unsigned long)FourthByte << 24) | ((unsigned long)ThirdByte << 16) | ((unsigned long)SecondByte << 8) | ((unsigned long)LowByte));
+  return LongInt;
+}
+
+byte SerialReadByte(){
+  while (SerialUSB.available() == 0) {}
+  LowByte = SerialUSB.read();
+  return LowByte;
 }

@@ -282,7 +282,8 @@ if ~isempty(NameList)
         SettingsPath = fullfile(BpodSystem.BpodPath,'Data',SubjectName,ProtocolName, 'Session Settings',[SettingsFileName '.mat']);
         BpodSystem.DataPath = DataPath;
         BpodSystem.SettingsPath = SettingsPath;
-        ProtocolPath = fullfile(BpodSystem.BpodPath,'Protocols',ProtocolName,[ProtocolName '.m']);
+        ProtocolPath = fullfile(BpodSystem.BpodPath,'Protocols',ProtocolName);
+        % JCE - Make this the path to the file, excluding the file
         close(LaunchManager)
         BpodSystem.Live = 1;
         BpodSystem.GUIData.ProtocolName = ProtocolName;
@@ -298,12 +299,8 @@ if ~isempty(NameList)
         BpodSystem.BeingUsed = 1;
         BpodSystem.ProtocolStartTime = BpodTime;
         
-        if ProtocolName(1) == '@'    
-            dispatch(ProtocolName)
-        else
-            addpath(ProtocolPath);            
-            run(ProtocolPath);
-        end
+        % If protocol is a class of type ProtoObj, then dispatch, else run.
+        runordispatch(ProtocolName, ProtocolPath)
         
     else
         BpodErrorSound;
